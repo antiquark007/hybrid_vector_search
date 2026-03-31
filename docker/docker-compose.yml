@@ -1,0 +1,95 @@
+version: "3.9"
+
+services:
+  # ── FastAPI search service ────────────────────────────────────────────────
+  api:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    ports:
+      - "8000:8000"
+    environment:
+      DATABASE_URL:        postgresql://hvs:hvs@postgres:5432/hvs
+      REDIS_URL:           redis://redis:6379/0
+      EMBED_MODEL:         all-MiniLM-L6-v2
+      INDEX_PATH:          /data/hnsw.bin
+      HNSW_M:              "16"
+      HNSW_EF_CONSTRUCTION: "200"
+    volumes:
+      - index_data:/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_started
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+
+  # ── Celery ingestion worker ───────────────────────────────────────────────
+  worker:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    command: >
+      celery -A src.ingestion.worker worker
+      --loglevel=info
+      --concurrency=4
+      --queues=default
+    environment:
+      DATABASE_URL: postgresql://hvs:hvs@postgres:5432/hvs
+      REDIS_URL:    redis://redis:6379/0
+      EMBED_MODEL:  all-MiniLM-L6-v2
+      INDEX_PATH:   /data/hnsw.bin
+    volumes:
+      - index_data:/data
+    depends_on:
+      - postgres
+      - redis
+    restart: unless-stopped
+
+  # ── Flower — Celery monitoring UI ────────────────────────────────────────
+  flower:
+    build:
+      context: ..
+      dockerfile: docker/Dockerfile.api
+    command: celery -A src.ingestion.worker flower --port=5555
+    ports:
+      - "5555:5555"
+    environment:
+      REDIS_URL: redis://redis:6379/0
+    depends_on:
+      - redis
+    restart: unless-stopped
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB:       hvs
+      POSTGRES_USER:     hvs
+      POSTGRES_PASSWORD: hvs
+    volumes:
+      - pg_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U hvs"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # ── Redis ─────────────────────────────────────────────────────────────────
+  redis:
+    image: redis:7-alpine
+    command: redis-server --maxmemory 512mb --maxmemory-policy allkeys-lru
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+
+volumes:
+  index_data:
+  pg_data:
+  redis_data:

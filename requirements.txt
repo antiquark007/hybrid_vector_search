@@ -1,0 +1,12 @@
+fastapi>=0.109.0
+uvicorn[standard]>=0.27.0
+pydantic>=2.5.0
+sqlalchemy>=2.0.0
+psycopg2-binary>=2.9.9
+sentence-transformers>=2.6.0
+celery[redis]>=5.3.6
+redis>=5.0.1
+numpy>=1.26.0
+requests>=2.31.0
+hnswlib>=0.8.0        # fallback if C++ module not compiled
+flower>=2.0.1         # Celery monitoring

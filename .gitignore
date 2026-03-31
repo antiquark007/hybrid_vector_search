@@ -1,0 +1,66 @@
+# Build artifacts
+build/
+dist/
+*.o
+*.so
+*.a
+*.lib
+*.dll
+CMakeFiles/
+cmake_install.cmake
+CTestTestfile.cmake
+Makefile
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.eggs/
+*.egg
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment variables
+.env
+.env.local
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+hvs.db
+
+# Data and models
+data/
+*.bin
+*.model
+*.pt
+*.pth
+
+# Docker
+.dockerignore
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+*.log

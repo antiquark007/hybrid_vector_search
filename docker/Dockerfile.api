@@ -1,0 +1,48 @@
+# ── Build stage: compile C++ HNSW module ──────────────────────────────────
+FROM python:3.11-slim AS builder
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        build-essential cmake libomp-dev git \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /build
+COPY requirements.txt .
+RUN pip install --no-cache-dir pybind11[global] numpy
+
+COPY CMakeLists.txt .
+COPY include/ include/
+COPY src/core/ src/core/
+
+RUN cmake -B build -DCMAKE_BUILD_TYPE=Release \
+        -Dpybind11_DIR=$(python -c "import pybind11; print(pybind11.get_cmake_dir())") \
+    && cmake --build build --target hvs_core -j$(nproc)
+
+# ── Runtime stage ──────────────────────────────────────────────────────────
+FROM python:3.11-slim
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+        libomp5 curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Copy compiled module
+COPY --from=builder /build/build/hvs_core*.so ./
+
+# Python deps
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Source
+COPY src/ src/
+COPY scripts/ scripts/
+
+RUN mkdir -p /data
+
+ENV PYTHONPATH=/app
+ENV INDEX_PATH=/data/hnsw.bin
+
+EXPOSE 8000
+
+CMD ["uvicorn", "src.api.main:app", "--host", "0.0.0.0", "--port", "8000", \
+     "--workers", "2", "--log-level", "info"]
