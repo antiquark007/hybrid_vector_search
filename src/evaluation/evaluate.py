@@ -5,11 +5,19 @@ src/evaluation/evaluate.py
 Evaluate the search engine against MS MARCO queries.
 
 Usage:
+    # Generate sample data first (recommended)
+    python scripts/generate_sample_eval_data.py
+    
+    # Then run evaluation
     python -m src.evaluation.evaluate \
         --api http://localhost:8000 \
         --queries data/queries.dev.small.tsv \
         --qrels  data/qrels.dev.small.tsv \
         --k 10 --n 1000
+    
+    # Or with shorthand from Makefile
+    make generate-eval-data
+    make eval
 """
 from __future__ import annotations
 
@@ -34,8 +42,14 @@ QUERIES_URL = "https://msmarco.blob.core.windows.net/msmarcoranking/queries.dev.
 def download_if_missing(url: str, dest: Path) -> Path:
     if not dest.exists():
         logger.info(f"Downloading {url} → {dest}")
-        import urllib.request
-        urllib.request.urlretrieve(url, dest)
+        try:
+            import urllib.request
+            urllib.request.urlretrieve(url, dest)
+        except Exception as e:
+            logger.error(f"Failed to download from {url}: {e}")
+            logger.error(f"Please manually download and place at {dest}")
+            logger.error("Or provide --queries and --qrels arguments with local file paths")
+            raise
     return dest
 
 
@@ -159,8 +173,6 @@ def main():
     qrels_path   = Path(args.qrels)   if args.qrels   else download_if_missing(QRELS_URL,   data_dir / "qrels.dev.small.tsv")
     queries_path = Path(args.queries) if args.queries  else download_if_missing(QUERIES_URL, data_dir / "queries.dev.small.tsv")
 
-    qrels   = load_qrels(queries_path)  # reuse path
-    # Actually load correctly
     qrels   = load_qrels(qrels_path)
     queries = load_queries(queries_path)
 

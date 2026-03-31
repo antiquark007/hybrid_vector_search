@@ -82,6 +82,10 @@ curl -X POST http://localhost:8000/search \
 ### 6. Evaluate (MS MARCO Recall@10, MRR, latency)
 
 ```bash
+# Generate sample evaluation data first (fixes HTTP 409 error)
+make generate-eval-data
+
+# Then run evaluation
 make eval
 ```
 
@@ -90,6 +94,23 @@ make eval
 ```bash
 make bench   # 500 queries, 8 concurrent workers
 ```
+
+### 8. Web UI (Streamlit)
+
+```bash
+# Make sure FastAPI server is running first
+make run
+
+# In another terminal, start the Streamlit UI
+make ui
+# → http://localhost:8501
+```
+
+**UI Features:**
+- 🔍 Interactive vector search with adjustable parameters
+- 📝 Single & batch document ingestion
+- 📊 Real-time index statistics
+- 🧪 Demo queries for exploration
 
 ---
 
@@ -177,3 +198,10 @@ Measured on 100k MS MARCO passages, `all-MiniLM-L6-v2` (384-d), 8-core CPU:
 ## Resume Bullet
 
 > Engineered a hybrid C++/Python vector search engine with custom HNSW ANN indexing and OpenMP parallelism; achieved <10 ms p99 latency and >0.90 Recall@10 on MS MARCO 100k. Built async FastAPI service, Redis/Celery batch ingestion pipeline, and Dockerized multi-service deployment.
+
+
+## Reference 
+
+[simple_search_engine](https://mrinalxdev.github.io/mrinalxblogs/blogs/search-engines.html)
+[vector_search](https://medium.com/@roshni_k06/vectorized-thinking-101-a-practical-guide-to-getting-started-with-vector-search-in-elasticsearch-d4738a6e1512)
+[vector_db](https://rockybhatia.substack.com/p/vector-databases-101-your-first-step)
